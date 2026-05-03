@@ -6,12 +6,14 @@ router.post("/", async (req, res) => {
     try {
         const { date, records } = req.body;
 
-        const existing =
-            await Attendance.findOne({ date });
+        const existing = await Attendance.findOne({
+            date,
+        });
 
         if (existing) {
             existing.records = records;
             await existing.save();
+
             return res.json(existing);
         }
 
@@ -73,7 +75,10 @@ router.get("/student/:id", async (req, res) => {
         const total = present + absent;
 
         const percentage = total
-            ? ((present / total) * 100).toFixed(1)
+            ? (
+                (present / total) *
+                100
+            ).toFixed(1)
             : 0;
 
         res.json({
@@ -97,6 +102,30 @@ router.get("/:date", async (req, res) => {
             });
 
         res.json(data);
+    } catch (error) {
+        res.status(500).json({
+            error: error.message,
+        });
+    }
+});
+
+router.delete("/:date", async (req, res) => {
+    try {
+        const deleted =
+            await Attendance.findOneAndDelete({
+                date: req.params.date,
+            });
+
+        if (!deleted) {
+            return res.status(404).json({
+                error: "Attendance not found",
+            });
+        }
+
+        res.json({
+            message:
+                "Attendance deleted successfully",
+        });
     } catch (error) {
         res.status(500).json({
             error: error.message,

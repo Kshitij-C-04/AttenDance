@@ -350,6 +350,7 @@ function Home() {
                     {tab === "calendar" && (
                         <CalendarView
                             attendanceData={attendanceData}
+                            setAttendanceData={setAttendanceData}
                         />
                     )}
 

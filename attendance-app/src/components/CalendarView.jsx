@@ -1,6 +1,10 @@
 import { useMemo, useState } from "react";
+import API from "../api";
 
-function CalendarView({ attendanceData }) {
+function CalendarView({
+                          attendanceData,
+                          setAttendanceData,
+                      }) {
     const [selectedDay, setSelectedDay] =
         useState(null);
 
@@ -28,6 +32,24 @@ function CalendarView({ attendanceData }) {
 
         return map;
     }, [attendanceData]);
+
+    async function deleteAttendance() {
+        await API.delete(
+            `/attendance/${encodeURIComponent(
+                selectedDay.fullDate
+            )}`
+        );
+
+        setAttendanceData((prev) =>
+            prev.filter(
+                (d) =>
+                    d.date !==
+                    selectedDay.fullDate
+            )
+        );
+
+        setSelectedDay(null);
+    }
 
     const monthDays = Array.from(
         { length: 31 },
@@ -100,69 +122,73 @@ function CalendarView({ attendanceData }) {
                                 onClick={() =>
                                     setSelectedDay(null)
                                 }
-                                className="text-2xl"
                             >
-                                ×
+                                ✕
                             </button>
                         </div>
 
-                        <div className="mb-5">
-                            <h3 className="text-green-600 font-bold mb-2">
-                                Present (
-                                {
-                                    selectedDay.records.filter(
-                                        (r) =>
-                                            r.status === "P"
-                                    ).length
-                                }
-                                )
-                            </h3>
+                        <h3 className="text-green-600 font-bold mb-2">
+                            Present (
+                            {
+                                selectedDay.records.filter(
+                                    (r) =>
+                                        r.status === "P"
+                                ).length
+                            }
+                            )
+                        </h3>
 
-                            <div className="space-y-2">
-                                {selectedDay.records
-                                    .filter(
-                                        (r) =>
-                                            r.status === "P"
-                                    )
-                                    .map((r) => (
-                                        <div
-                                            key={r.studentId}
-                                            className="bg-green-50 p-3 rounded-2xl"
-                                        >
-                                            ✓ {r.name}
-                                        </div>
-                                    ))}
-                            </div>
+                        <div className="space-y-2 mb-5">
+                            {selectedDay.records
+                                .filter(
+                                    (r) =>
+                                        r.status === "P"
+                                )
+                                .map((r) => (
+                                    <div
+                                        key={r.studentId}
+                                        className="bg-green-50 p-3 rounded-2xl"
+                                    >
+                                        ✓ {r.name}
+                                    </div>
+                                ))}
                         </div>
 
-                        <div>
-                            <h3 className="text-red-600 font-bold mb-2">
-                                Absent (
-                                {
-                                    selectedDay.records.filter(
-                                        (r) =>
-                                            r.status === "A"
-                                    ).length
-                                }
-                                )
-                            </h3>
+                        <h3 className="text-red-600 font-bold mb-2">
+                            Absent (
+                            {
+                                selectedDay.records.filter(
+                                    (r) =>
+                                        r.status === "A"
+                                ).length
+                            }
+                            )
+                        </h3>
 
-                            <div className="space-y-2">
-                                {selectedDay.records
-                                    .filter(
-                                        (r) =>
-                                            r.status === "A"
-                                    )
-                                    .map((r) => (
-                                        <div
-                                            key={r.studentId}
-                                            className="bg-red-50 p-3 rounded-2xl"
-                                        >
-                                            ✗ {r.name}
-                                        </div>
-                                    ))}
-                            </div>
+                        <div className="space-y-2 mb-6">
+                            {selectedDay.records
+                                .filter(
+                                    (r) =>
+                                        r.status === "A"
+                                )
+                                .map((r) => (
+                                    <div
+                                        key={r.studentId}
+                                        className="bg-red-50 p-3 rounded-2xl"
+                                    >
+                                        ✗ {r.name}
+                                    </div>
+                                ))}
                         </div>
+
+                        <button
+                            onClick={
+                                deleteAttendance
+                            }
+                            className="w-full py-3 rounded-2xl bg-red-600 text-white font-semibold"
+                        >
+                            Delete Attendance
+                        </button>
                     </div>
                 </div>
             )}
