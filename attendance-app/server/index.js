@@ -32,12 +32,15 @@ const frontendPath = path.join(
 
 app.use(express.static(frontendPath));
 
-app.get("*", (req, res) => {
+// fallback route for React
+app.get("/*rest", (req, res) => {
     res.sendFile(
         path.join(frontendPath, "index.html")
     );
 });
 
 app.listen(process.env.PORT || 5000, () => {
-    console.log("Server running");
+    console.log(
+        `Server running on ${process.env.PORT || 5000}`
+    );
 });
