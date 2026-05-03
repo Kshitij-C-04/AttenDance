@@ -64,13 +64,7 @@ router.patch("/:id/fees", async (req, res) => {
             });
         }
 
-        const updatedFees = {
-            ...student.fees,
-            [month]: paid,
-        };
-
-        student.fees = updatedFees;
-
+        student.fees.set(month, paid);
         await student.save();
 
         res.json(student);

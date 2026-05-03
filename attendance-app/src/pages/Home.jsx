@@ -351,6 +351,7 @@ function Home() {
                         <CalendarView
                             attendanceData={attendanceData}
                             setAttendanceData={setAttendanceData}
+                            students={students}
                         />
                     )}
 

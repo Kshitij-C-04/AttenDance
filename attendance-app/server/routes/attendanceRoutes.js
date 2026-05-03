@@ -13,7 +13,6 @@ router.post("/", async (req, res) => {
         if (existing) {
             existing.records = records;
             await existing.save();
-
             return res.json(existing);
         }
 
@@ -24,6 +23,32 @@ router.post("/", async (req, res) => {
             });
 
         res.json(attendance);
+    } catch (error) {
+        res.status(500).json({
+            error: error.message,
+        });
+    }
+});
+
+router.put("/:date", async (req, res) => {
+    try {
+        const { records } = req.body;
+
+        const updated =
+            await Attendance.findOneAndUpdate(
+                {
+                    date: req.params.date,
+                },
+                {
+                    records,
+                },
+                {
+                    new: true,
+                    upsert: true,
+                }
+            );
+
+        res.json(updated);
     } catch (error) {
         res.status(500).json({
             error: error.message,
@@ -111,16 +136,9 @@ router.get("/:date", async (req, res) => {
 
 router.delete("/:date", async (req, res) => {
     try {
-        const deleted =
-            await Attendance.findOneAndDelete({
-                date: req.params.date,
-            });
-
-        if (!deleted) {
-            return res.status(404).json({
-                error: "Attendance not found",
-            });
-        }
+        await Attendance.findOneAndDelete({
+            date: req.params.date,
+        });
 
         res.json({
             message:

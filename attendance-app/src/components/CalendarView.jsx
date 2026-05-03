@@ -4,9 +4,16 @@ import API from "../api";
 function CalendarView({
                           attendanceData,
                           setAttendanceData,
+                          students,
                       }) {
     const [selectedDay, setSelectedDay] =
         useState(null);
+
+    const [editRecords, setEditRecords] =
+        useState([]);
+
+    const [newDate, setNewDate] =
+        useState("");
 
     const days = useMemo(() => {
         const map = {};
@@ -33,6 +40,51 @@ function CalendarView({
         return map;
     }, [attendanceData]);
 
+    function openDay(data) {
+        setSelectedDay(data);
+        setEditRecords(data.records);
+    }
+
+    function toggleStatus(studentId) {
+        setEditRecords((prev) =>
+            prev.map((r) =>
+                r.studentId === studentId
+                    ? {
+                        ...r,
+                        status:
+                            r.status === "P"
+                                ? "A"
+                                : "P",
+                    }
+                    : r
+            )
+        );
+    }
+
+    async function updateAttendance() {
+        await API.put(
+            `/attendance/${encodeURIComponent(
+                selectedDay.fullDate
+            )}`,
+            {
+                records: editRecords,
+            }
+        );
+
+        setAttendanceData((prev) =>
+            prev.map((d) =>
+                d.date === selectedDay.fullDate
+                    ? {
+                        ...d,
+                        records: editRecords,
+                    }
+                    : d
+            )
+        );
+
+        setSelectedDay(null);
+    }
+
     async function deleteAttendance() {
         await API.delete(
             `/attendance/${encodeURIComponent(
@@ -51,6 +103,43 @@ function CalendarView({
         setSelectedDay(null);
     }
 
+    async function addMissedAttendance() {
+        if (!newDate) return;
+
+        const formatted =
+            new Date(newDate).toLocaleDateString(
+                "en-IN",
+                {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                }
+            );
+
+        const records = students.map((s) => ({
+            studentId: s._id,
+            name: s.name,
+            status: "A",
+        }));
+
+        const res = await API.put(
+            `/attendance/${encodeURIComponent(
+                formatted
+            )}`,
+            {
+                records,
+            }
+        );
+
+        setAttendanceData((prev) => [
+            res.data,
+            ...prev,
+        ]);
+
+        setNewDate("");
+    }
+
     const monthDays = Array.from(
         { length: 31 },
         (_, i) => i + 1
@@ -58,24 +147,34 @@ function CalendarView({
 
     return (
         <>
-            <div className="bg-white rounded-3xl p-4 shadow-lg">
-                <h2 className="text-xl font-bold mb-4">
-                    May 2026
+            <div className="bg-white rounded-3xl p-4 shadow-lg mb-4">
+                <h2 className="font-bold mb-3">
+                    Add Missed Attendance
                 </h2>
 
-                <div className="grid grid-cols-7 gap-2 text-center text-sm font-semibold mb-3">
-                    {[
-                        "Mon",
-                        "Tue",
-                        "Wed",
-                        "Thu",
-                        "Fri",
-                        "Sat",
-                        "Sun",
-                    ].map((d) => (
-                        <div key={d}>{d}</div>
-                    ))}
+                <div className="flex gap-2">
+                    <input
+                        type="date"
+                        value={newDate}
+                        onChange={(e) =>
+                            setNewDate(e.target.value)
+                        }
+                        className="flex-1 border rounded-2xl px-4 py-2"
+                    />
+
+                    <button
+                        onClick={addMissedAttendance}
+                        className="bg-black text-white px-4 rounded-2xl"
+                    >
+                        Add
+                    </button>
                 </div>
+            </div>
+
+            <div className="bg-white rounded-3xl p-4 shadow-lg">
+                <h2 className="text-xl font-bold mb-4">
+                    Calendar
+                </h2>
 
                 <div className="grid grid-cols-7 gap-2">
                     {monthDays.map((day) => {
@@ -85,24 +184,23 @@ function CalendarView({
                             <button
                                 key={day}
                                 onClick={() =>
-                                    data &&
-                                    setSelectedDay(data)
+                                    data && openDay(data)
                                 }
-                                className={`rounded-2xl p-2 min-h-[75px] flex flex-col justify-between ${
+                                className={`rounded-2xl p-2 min-h-[75px] ${
                                     data
-                                        ? "bg-blue-100 hover:bg-blue-200"
+                                        ? "bg-blue-100"
                                         : "bg-gray-100 text-gray-400"
                                 }`}
                             >
-                <span className="font-bold text-left">
-                  {day}
-                </span>
+                                <div className="font-bold">
+                                    {day}
+                                </div>
 
                                 {data && (
-                                    <span className="text-xs font-semibold">
-                    {data.present}/
+                                    <div className="text-xs mt-2">
+                                        {data.present}/
                                         {data.total}
-                  </span>
+                                    </div>
                                 )}
                             </button>
                         );
@@ -113,81 +211,53 @@ function CalendarView({
             {selectedDay && (
                 <div className="fixed inset-0 bg-black/40 z-50 flex items-end">
                     <div className="bg-white w-full rounded-t-3xl p-5 max-h-[80vh] overflow-auto">
-                        <div className="flex justify-between items-center mb-5">
-                            <h2 className="text-xl font-bold">
-                                {selectedDay.fullDate}
-                            </h2>
+                        <h2 className="font-bold text-xl mb-4">
+                            {selectedDay.fullDate}
+                        </h2>
+
+                        <div className="space-y-2 mb-6">
+                            {editRecords.map((r) => (
+                                <button
+                                    key={r.studentId}
+                                    onClick={() =>
+                                        toggleStatus(
+                                            r.studentId
+                                        )
+                                    }
+                                    className={`w-full p-3 rounded-2xl text-left ${
+                                        r.status === "P"
+                                            ? "bg-green-100"
+                                            : "bg-red-100"
+                                    }`}
+                                >
+                                    {r.name} — {r.status}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 mb-3">
+                            <button
+                                onClick={updateAttendance}
+                                className="py-3 rounded-2xl bg-blue-600 text-white"
+                            >
+                                Update
+                            </button>
 
                             <button
-                                onClick={() =>
-                                    setSelectedDay(null)
-                                }
+                                onClick={deleteAttendance}
+                                className="py-3 rounded-2xl bg-red-600 text-white"
                             >
-                                ✕
+                                Delete
                             </button>
                         </div>
 
-                        <h3 className="text-green-600 font-bold mb-2">
-                            Present (
-                            {
-                                selectedDay.records.filter(
-                                    (r) =>
-                                        r.status === "P"
-                                ).length
-                            }
-                            )
-                        </h3>
-
-                        <div className="space-y-2 mb-5">
-                            {selectedDay.records
-                                .filter(
-                                    (r) =>
-                                        r.status === "P"
-                                )
-                                .map((r) => (
-                                    <div
-                                        key={r.studentId}
-                                        className="bg-green-50 p-3 rounded-2xl"
-                                    >
-                                        ✓ {r.name}
-                                    </div>
-                                ))}
-                        </div>
-
-                        <h3 className="text-red-600 font-bold mb-2">
-                            Absent (
-                            {
-                                selectedDay.records.filter(
-                                    (r) =>
-                                        r.status === "A"
-                                ).length
-                            }
-                            )
-                        </h3>
-
-                        <div className="space-y-2 mb-6">
-                            {selectedDay.records
-                                .filter(
-                                    (r) =>
-                                        r.status === "A"
-                                )
-                                .map((r) => (
-                                    <div
-                                        key={r.studentId}
-                                        className="bg-red-50 p-3 rounded-2xl"
-                                    >
-                                        ✗ {r.name}
-                                    </div>
-                                ))}
-                        </div>
-
                         <button
-                            onClick={
-                                deleteAttendance
+                            onClick={() =>
+                                setSelectedDay(null)
                             }
-                            className="w-full py-3 rounded-2xl bg-red-600 text-white font-semibold"
+                            className="w-full py-3 rounded-2xl bg-gray-200"
                         >
-                            Delete Attendance
+                            Close
                         </button>
                     </div>
                 </div>
