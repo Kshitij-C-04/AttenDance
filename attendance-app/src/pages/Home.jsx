@@ -9,19 +9,27 @@ import {
 
 import StudentModal from "../components/StudentModal";
 import DeleteModal from "../components/DeleteModal";
+import EditModal from "../components/EditModal";
 import CalendarView from "../components/CalendarView";
 import FeesView from "../components/FeesView";
 
 function Home() {
     const [tab, setTab] = useState("attendance");
     const [students, setStudents] = useState([]);
-    const [attendanceData, setAttendanceData] = useState([]);
+    const [attendanceData, setAttendanceData] =
+        useState([]);
     const [name, setName] = useState("");
-    const [editing, setEditing] = useState(null);
-    const [attendance, setAttendance] = useState({});
+    const [attendance, setAttendance] =
+        useState({});
     const [search, setSearch] = useState("");
 
     const [selectedStudent, setSelectedStudent] =
+        useState(null);
+
+    const [editModal, setEditModal] =
+        useState(false);
+
+    const [studentToEdit, setStudentToEdit] =
         useState(null);
 
     const [stats, setStats] = useState({
@@ -76,13 +84,24 @@ function Home() {
         fetchStudents();
     }
 
-    async function updateStudent() {
-        await API.put(`/students/${editing}`, {
-            name,
-        });
+    function openEdit(student) {
+        setStudentToEdit(student);
+        setEditModal(true);
+    }
 
-        setEditing(null);
-        setName("");
+    async function updateStudent(newName) {
+        if (!newName.trim()) return;
+
+        await API.put(
+            `/students/${studentToEdit._id}`,
+            {
+                name: newName,
+            }
+        );
+
+        setEditModal(false);
+        setStudentToEdit(null);
+
         fetchStudents();
     }
 
@@ -136,10 +155,7 @@ function Home() {
         });
 
         await fetchAttendance();
-
-        // clear all selected attendance
         setAttendance({});
-
         alert("Attendance Saved ✓");
     }
 
@@ -209,25 +225,16 @@ function Home() {
                                     onChange={(e) =>
                                         setName(e.target.value)
                                     }
-                                    placeholder="Student name"
+                                    placeholder="Add student"
                                     className="flex-1 border rounded-2xl px-4 py-3 outline-none"
                                 />
 
-                                {editing ? (
-                                    <button
-                                        onClick={updateStudent}
-                                        className="bg-blue-600 text-white px-5 rounded-2xl"
-                                    >
-                                        Save
-                                    </button>
-                                ) : (
-                                    <button
-                                        onClick={addStudent}
-                                        className="bg-green-600 text-white px-5 rounded-2xl"
-                                    >
-                                        <FaPlus />
-                                    </button>
-                                )}
+                                <button
+                                    onClick={addStudent}
+                                    className="bg-green-600 text-white px-5 rounded-2xl"
+                                >
+                                    <FaPlus />
+                                </button>
                             </div>
 
                             <input
@@ -269,11 +276,11 @@ function Home() {
                                                             "P"
                                                         )
                                                     }
-                                                    className={`flex-1 py-2 rounded-2xl font-medium transition-all ${
+                                                    className={`flex-1 py-2 rounded-2xl font-medium ${
                                                         attendance[
                                                             student._id
                                                             ] === "P"
-                                                            ? "bg-green-600 text-white shadow-lg scale-[1.02]"
+                                                            ? "bg-green-600 text-white"
                                                             : "bg-green-100 text-green-700"
                                                     }`}
                                                 >
@@ -287,11 +294,11 @@ function Home() {
                                                             "A"
                                                         )
                                                     }
-                                                    className={`flex-1 py-2 rounded-2xl font-medium transition-all ${
+                                                    className={`flex-1 py-2 rounded-2xl font-medium ${
                                                         attendance[
                                                             student._id
                                                             ] === "A"
-                                                            ? "bg-red-600 text-white shadow-lg scale-[1.02]"
+                                                            ? "bg-red-600 text-white"
                                                             : "bg-red-100 text-red-700"
                                                     }`}
                                                 >
@@ -304,13 +311,7 @@ function Home() {
                                                             student._id
                                                         )
                                                     }
-                                                    className={`px-4 rounded-2xl font-medium transition-all ${
-                                                        attendance[
-                                                            student._id
-                                                            ]
-                                                            ? "bg-gray-700 text-white"
-                                                            : "bg-gray-200 text-gray-700"
-                                                    }`}
+                                                    className="px-4 rounded-2xl bg-gray-200"
                                                 >
                                                     Clear
                                                 </button>
@@ -318,14 +319,9 @@ function Home() {
 
                                             <div className="flex gap-2">
                                                 <button
-                                                    onClick={() => {
-                                                        setEditing(
-                                                            student._id
-                                                        );
-                                                        setName(
-                                                            student.name
-                                                        );
-                                                    }}
+                                                    onClick={() =>
+                                                        openEdit(student)
+                                                    }
                                                     className="flex-1 bg-blue-100 py-2 rounded-2xl"
                                                 >
                                                     <FaEdit className="mx-auto" />
@@ -401,6 +397,15 @@ function Home() {
                     setDeleteModal(false)
                 }
                 onConfirm={confirmDelete}
+            />
+
+            <EditModal
+                open={editModal}
+                student={studentToEdit}
+                onClose={() =>
+                    setEditModal(false)
+                }
+                onSave={updateStudent}
             />
         </div>
     );
