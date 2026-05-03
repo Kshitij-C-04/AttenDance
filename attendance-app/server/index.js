@@ -1,6 +1,7 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const path = require("path");
 require("dotenv").config();
 
 const studentRoutes = require("./routes/studentRoutes");
@@ -8,7 +9,12 @@ const attendanceRoutes = require("./routes/attendanceRoutes");
 
 const app = express();
 
-app.use(cors());
+app.use(
+    cors({
+        origin: "*",
+    })
+);
+
 app.use(express.json());
 
 mongoose
@@ -19,12 +25,19 @@ mongoose
 app.use("/api/students", studentRoutes);
 app.use("/api/attendance", attendanceRoutes);
 
-app.get("/", (req, res) => {
-    res.send("Attendance API running");
+const frontendPath = path.join(
+    __dirname,
+    "../dist"
+);
+
+app.use(express.static(frontendPath));
+
+app.get("*", (req, res) => {
+    res.sendFile(
+        path.join(frontendPath, "index.html")
+    );
 });
 
 app.listen(process.env.PORT || 5000, () => {
-    console.log(
-        `Server running on port ${process.env.PORT || 5000}`
-    );
+    console.log("Server running");
 });
