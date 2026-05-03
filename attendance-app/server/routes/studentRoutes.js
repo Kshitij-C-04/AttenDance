@@ -64,7 +64,13 @@ router.patch("/:id/fees", async (req, res) => {
             });
         }
 
-        student.fees.set(month, paid);
+        student.fees = {
+            ...student.fees,
+            [month]: paid,
+        };
+
+        student.markModified("fees");
+
         await student.save();
 
         res.json(student);
